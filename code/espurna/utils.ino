@@ -380,6 +380,9 @@ void info() {
         #if V9261F_SUPPORT
             DEBUG_MSG_P(PSTR(" V9261F"));
         #endif
+        #if TELEINFO_SUPPORT
+            DEBUG_MSG_P(PSTR(" TELEINFO"));
+        #endif
 
     #endif // SENSOR_SUPPORT
 

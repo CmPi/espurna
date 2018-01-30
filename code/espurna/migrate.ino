@@ -713,6 +713,11 @@ void migrate() {
             setSetting("chLogic", 3, 0);
             setSetting("relays", 1);
 
+        #elif defined(GENERIC_TELEINFO)
+
+            setSetting("board", 54);
+
+
         #else
 
             // Allow users to define new settings without migration config

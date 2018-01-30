@@ -1422,6 +1422,21 @@
     #define RELAY8_TYPE         RELAY_TYPE_NORMAL
 
 // -----------------------------------------------------------------------------
+// TELEINFO
+// -----------------------------------------------------------------------------
+
+#elif defined(GENERIC_TELEINFO)
+
+    // Info
+    #define MANUFACTURER        "GENERIC"
+    #define DEVICE              "TELEINFO"
+    #define ALEXA_SUPPORT       0
+
+    // TELEINFO
+    #define TELEINFO_SUPPORT      1
+    #define TELEINFO_PIN          2
+
+// -----------------------------------------------------------------------------
 
 #endif
 

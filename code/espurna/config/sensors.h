@@ -61,6 +61,7 @@
 #define SENSOR_SI7021_ID                    0x15
 #define SENSOR_SHT3X_I2C_ID                 0x16
 #define SENSOR_BH1750_ID                    0x17
+#define SENSOR_TELEINFO_ID                  0x18
 
 //--------------------------------------------------------------------------------
 // Magnitudes
@@ -441,6 +442,26 @@
 #define V9261F_POWER_FACTOR             153699.0
 #define V9261F_RPOWER_FACTOR            V9261F_CURRENT_FACTOR
 
+//------------------------------------------------------------------------------
+// TELEINFO based power sensor
+// Enable support by passing SI7021_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef TELEINFO_SUPPORT
+#define TELEINFO_SUPPORT                  0
+#endif
+
+#ifndef TELEINFO_PIN
+#define TELEINFO_PIN                      2       // TX pin from the V9261F
+#endif
+
+#ifndef TELEINFO_PIN_INVERSE
+#define TELEINFO_PIN_INVERSE              1       // Signal is inverted
+#endif
+
+#define TELEINFO_SYNC_INTERVAL            600     // Sync signal length (ms)
+#define TELEINFO_BAUDRATE                 4800    // UART baudrate
+
 // =============================================================================
 // Sensor helpers configuration
 // =============================================================================
@@ -451,7 +472,7 @@
     || EMON_ADC121_SUPPORT || EMON_ADS1X15_SUPPORT \
     || EMON_ANALOG_SUPPORT || EVENTS_SUPPORT || HLW8012_SUPPORT \
     || MHZ19_SUPPORT || PMSX003_SUPPORT || SHT3X_I2C_SUPPORT \
-    || SI7021_SUPPORT || V9261F_SUPPORT
+    || SI7021_SUPPORT || V9261F_SUPPORT || TELEINFO_SUPPORT
 #define SENSOR_SUPPORT                      1
 #else
 #define SENSOR_SUPPORT                      0
@@ -639,6 +660,11 @@ PROGMEM const char* const magnitude_units[] = {
 #if V9261F_SUPPORT
     #include <SoftwareSerial.h>
     #include "../sensors/V9261FSensor.h"
+#endif
+
+#if TELEINFO_SUPPORT
+    #include <SoftwareSerial.h>
+    #include "../sensors/TeleinfoSensor.h"
 #endif
 
 #endif // SENSOR_SUPPORT
