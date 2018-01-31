@@ -1,16 +1,53 @@
 // -----------------------------------------------------------------------------
-// V9261F based power monitor
-// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
+// Teleinfo 
+// French energy counter
+// ESP-01 1M board based sensor
+// Uses SoftwareSerial library
+// Copyright (C) 2018 by CmPi <cmpi at webe dot fr>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && TELEINFO_SUPPORT
 
 #pragma once
 
+// common includes for a sensor
 #include "Arduino.h"
 #include "BaseSensor.h"
 
+// Teleinfo sensor needs also these ones
 #include <SoftwareSerial.h>
+
+// Slots for a Teleinfo sensor
+#define TI_SLOT_ADCO                  0   // n° de contrat
+#define TI_SLOT_OPTARIF               1   // option tarifaire, ici Heure Creuse
+#define TI_SLOT_ISOUSC                2   // intensité souscrite
+#define TI_SLOT_HCHC                  3   // valeur de l'index heure creuse en option tarifaire heure creuse
+#define TI_SLOT_HCHP                  4   // valeur de l'index heure pleine en option tarifaire heure pleine 
+#define TI_SLOT_PTEC                  5   // période tarifaire en cours, ici heure pleine
+#define TI_SLOT_IINST                 6   //  valeur instantanée de l'intensité, ici 1 A 
+#define TI_SLOT_MAX                   6   // 
+#define TI_SLOT_COUNT                 7   // 
+
+#define TI_STX  0X02
+#define TI_ETX  0x03
+#define TI_EOT  0x04
+#define TI_LF   0x0A
+#define TI_CR   0x0D
+#define TI_SP   0x20
+
+PROGMEM const char teleinfo_adco_topic[]    = "ADCO";
+PROGMEM const char teleinfo_optarif_topic[] = "OPTARIF";
+PROGMEM const char teleinfo_isousc_topic[]  = "ISOUSC";
+PROGMEM const char teleinfo_hchc_topic[]    = "HCHC";
+PROGMEM const char teleinfo_hchp_topic[]    = "HCHP";
+PROGMEM const char teleinfo_ptec_topic[]    = "PTEC";
+PROGMEM const char teleinfo_iinst_topic[]   = "IINST";
+
+PROGMEM const char* const teleinfo_topics[] = {
+    teleinfo_adco_topic, teleinfo_optarif_topic, teleinfo_isousc_topic,
+    teleinfo_isousc_topic, teleinfo_hchc_topic, teleinfo_hchp_topic,
+    teleinfo_ptec_topic, teleinfo_iinst_topic
+};
 
 class TeleinfoSensor : public BaseSensor {
 
@@ -21,7 +58,7 @@ class TeleinfoSensor : public BaseSensor {
         // ---------------------------------------------------------------------
 
         TeleinfoSensor(): BaseSensor(), _data() {
-            _count = 6;
+            _count = TI_SLOT_COUNT;
             _sensor_id = SENSOR_TELEINFO_ID;
         }
 
@@ -65,20 +102,30 @@ class TeleinfoSensor : public BaseSensor {
 
             if (_serial) delete _serial;
 
-            _serial = new SoftwareSerial(_pin_rx, SW_SERIAL_UNUSED_PIN, _inverted, 32);
-            _serial->begin(V9261F_BAUDRATE);
+            _serial = new SoftwareSerial( _pin_rx, SW_SERIAL_UNUSED_PIN, _inverted, 32 );
+            _serial->begin(TELEINFO_BAUDRATE);
 
         }
 
         // Descriptive name of the sensor
         String description() {
             char buffer[28];
-            snprintf(buffer, sizeof(buffer), "V9261F @ SwSerial(%u,NULL)", _pin_rx);
+            snprintf(buffer, sizeof(buffer), "TELEINFO @ SwSerial(%u,NULL)", _pin_rx);
             return String(buffer);
         }
 
         // Descriptive name of the slot # index
         String slot(unsigned char index) {
+            if (index < _count) {
+                _error = SENSOR_ERROR_OK;
+                char buffer[36];
+                if (index == TI_SLOT_ADCO)    snprintf(buffer, sizeof(buffer), teleinfo_adco_topic    );
+                if (index == TI_SLOT_OPTARIF) snprintf(buffer, sizeof(buffer), teleinfo_optarif_topic );
+                if (index == TI_SLOT_ISOUSC)  snprintf(buffer, sizeof(buffer), teleinfo_isousc_topic  );
+ 
+                return String(buffer);
+            }
+            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return description();
         };
 
@@ -94,23 +141,30 @@ class TeleinfoSensor : public BaseSensor {
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            if (index == 0) return MAGNITUDE_CURRENT;
-            if (index == 1) return MAGNITUDE_VOLTAGE;
-            if (index == 2) return MAGNITUDE_POWER_ACTIVE;
-            if (index == 3) return MAGNITUDE_POWER_REACTIVE;
-            if (index == 4) return MAGNITUDE_POWER_APPARENT;
-            if (index == 5) return MAGNITUDE_POWER_FACTOR;
+           if (index < _count) {
+                _error = SENSOR_ERROR_OK;
+                if (index == TI_SLOT_ADCO)    return MAGNITUDE_DIGITAL;
+                if (index == TI_SLOT_OPTARIF) return MAGNITUDE_DIGITAL;
+                if (index == TI_SLOT_ISOUSC)  return MAGNITUDE_CURRENT;
+                if (index == TI_SLOT_HCHC)    return MAGNITUDE_ENERGY;  // Joules
+                if (index == TI_SLOT_HCHP)    return MAGNITUDE_ENERGY;  // Joules
+                if (index == TI_SLOT_PTEC)    return MAGNITUDE_DIGITAL;
+                if (index == TI_SLOT_IINST)   return MAGNITUDE_CURRENT;
+
+            }
+            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return MAGNITUDE_NONE;
         }
 
         // Current value for slot # index
         double value(unsigned char index) {
-            if (index == 0) return _current;
-            if (index == 1) return _voltage;
-            if (index == 2) return _active;
-            if (index == 3) return _reactive;
-            if (index == 4) return _apparent;
-            if (index == 5) return _apparent > 0 ? 100 * _active / _apparent : 100;
+            if (index == TI_SLOT_ADCO)    return _adco;
+            if (index == TI_SLOT_OPTARIF) return _optarif;
+            if (index == TI_SLOT_ISOUSC)  return _isousc;
+            if (index == TI_SLOT_HCHC)    return _hchc;
+            if (index == TI_SLOT_HCHP)    return _hchp;
+            if (index == TI_SLOT_PTEC)    return 0;
+            if (index == TI_SLOT_IINST)   return _iinst;
             return 0;
         }
 
@@ -167,41 +221,6 @@ class TeleinfoSensor : public BaseSensor {
 
                 if (_checksum()) {
 
-                    _active = (double) (
-                        (_data[3]) +
-                        (_data[4] << 8) +
-                        (_data[5] << 16) +
-                        (_data[6] << 24)
-                    ) / _ratioP;
-
-                    _reactive = (double) (
-                        (_data[7]) +
-                        (_data[8] <<  8) +
-                        (_data[9] << 16) +
-                        (_data[10] << 24)
-                    ) / _ratioR;
-
-                    _voltage = (double) (
-                        (_data[11]) +
-                        (_data[12] <<  8) +
-                        (_data[13] << 16) +
-                        (_data[14] << 24)
-                    ) / _ratioV;
-
-                    _current = (double) (
-                        (_data[15]) +
-                        (_data[16] <<  8) +
-                        (_data[17] << 16) +
-                        (_data[18] << 24)
-                    ) / _ratioC;
-
-                    if (_active < 0) _active = 0;
-                    if (_reactive < 0) _reactive = 0;
-                    if (_voltage < 0) _voltage = 0;
-                    if (_current < 0) _current = 0;
-
-                    _apparent = sqrt(_reactive * _reactive + _active * _active);
-
                 }
 
                 last = millis();
@@ -238,16 +257,12 @@ class TeleinfoSensor : public BaseSensor {
         bool _inverted = TELEINFO_PIN_INVERSE;
         SoftwareSerial * _serial = NULL;
 
-        double _active = 0;
-        double _reactive = 0;
-        double _voltage = 0;
-        double _current = 0;
-        double _apparent = 0;
-
-        double _ratioP = 1;
-        double _ratioC = 1;
-        double _ratioV = 1;
-        double _ratioR = 1;
+        double _adco    = 0;
+        double _optarif = 0;
+        double _isousc  = 0;
+        double _hchc    = 0;
+        double _hchp    = 0;
+        double _iinst    = 0;
 
         unsigned char _data[24];
 
