@@ -452,15 +452,15 @@
 #endif
 
 #ifndef TELEINFO_PIN
-#define TELEINFO_PIN                      2       // TX pin from the V9261F
+#define TELEINFO_PIN                      2     // TX pin 
 #endif
 
 #ifndef TELEINFO_PIN_INVERSE
-#define TELEINFO_PIN_INVERSE              1       // Signal is inverted
+#define TELEINFO_PIN_INVERSE              0     // Signal is inverted
 #endif
 
-#define TELEINFO_SYNC_INTERVAL            600     // Sync signal length (ms)
-#define TELEINFO_BAUDRATE                 4800    // UART baudrate
+#define TELEINFO_SYNC_INTERVAL            600   // Sync signal length (ms)
+#define TELEINFO_BAUDRATE                 9600  // 9600    // UART baudrate 9600     1200 plante
 
 // =============================================================================
 // Sensor helpers configuration
