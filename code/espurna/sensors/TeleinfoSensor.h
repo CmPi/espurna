@@ -122,6 +122,9 @@ class TeleinfoSensor : public BaseSensor {
                 if (index == TI_SLOT_ADCO)    snprintf(buffer, sizeof(buffer), teleinfo_adco_topic    );
                 if (index == TI_SLOT_OPTARIF) snprintf(buffer, sizeof(buffer), teleinfo_optarif_topic );
                 if (index == TI_SLOT_ISOUSC)  snprintf(buffer, sizeof(buffer), teleinfo_isousc_topic  );
+
+                if (index == TI_SLOT_HCHP)  snprintf(buffer, sizeof(buffer), "HCHC"  );
+                if (index == TI_SLOT_HCHP)  snprintf(buffer, sizeof(buffer), "HCHP"  );
  
                 return String(buffer);
             }

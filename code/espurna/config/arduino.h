@@ -60,7 +60,7 @@
 //#define ARILUX_AL_LC02
 //#define WEMOS_D1_TARPUNA_SHIELD
 //#define MAGICHOME_LED_CONTROLLER_23
-//#define GENERIC_TELEINFO
+#define GENERIC_TELEINFO
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
@@ -113,4 +113,4 @@
 //#define SHT3X_I2C_SUPPORT      1
 //#define SI7021_SUPPORT         1
 //#define V9261F_SUPPORT         1
-//#define TELEINFO_SUPPPORT      1
+#define TELEINFO_SUPPPORT      1
