@@ -66,25 +66,25 @@
 // Features (values below are non-default values)
 //--------------------------------------------------------------------------------
 
-//#define ALEXA_SUPPORT          0
+#define ALEXA_SUPPORT          0
 //#define DEBUG_SERIAL_SUPPORT   0
-//#define DEBUG_TELNET_SUPPORT   0
-//#define DEBUG_UDP_SUPPORT      1
-//#define DOMOTICZ_SUPPORT       0
-//#define HOMEASSISTANT_SUPPORT  0
+#define DEBUG_TELNET_SUPPORT   0
+#define DEBUG_UDP_SUPPORT      1
+#define DOMOTICZ_SUPPORT       0
+#define HOMEASSISTANT_SUPPORT  0
 //#define I2C_SUPPORT            1
 //#define INFLUXDB_SUPPORT       1
 //#define IR_SUPPORT             1
 //#define LLMNR_SUPPORT          1  // Only with Arduino Core 2.4.0
-//#define MDNS_SERVER_SUPPORT    0
-//#define MDNS_CLIENT_SUPPORT    1
-//#define BROKER_SUPPORT         0
-//#define MQTT_SUPPORT           0
+#define MDNS_SERVER_SUPPORT    0
+#define MDNS_CLIENT_SUPPORT    1
+#define BROKER_SUPPORT         0
+#define MQTT_SUPPORT           0
 //#define NETBIOS_SUPPORT        1  // Only with Arduino Core 2.4.0
 //#define NOFUSS_SUPPORT         1
 //#define NTP_SUPPORT            0
 //#define RF_SUPPORT             1
-//#define SCHEDULER_SUPPORT      0
+#define SCHEDULER_SUPPORT      0
 //#define SPIFFS_SUPPORT         1
 //#define SSDP_SUPPORT           1
 //#define TELNET_SUPPORT         0

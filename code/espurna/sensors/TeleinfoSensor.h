@@ -26,18 +26,19 @@
 #define TI_SLOT_PTEC                  5   // période tarifaire en cours, ici heure pleine
 #define TI_SLOT_IINST                 6   //  valeur instantanée de l'intensité, ici 1 A 
 #define TI_SLOT_IMAX                  7   // 
+#define TI_SLOT_MAX                   7
 #define TI_SLOT_COUNT                 8   // 
 
 #define TI_STX  0X02
 #define TI_ETX  0x03
 #define TI_EOT  0x04
-#define TI_LF   0x0A  // SGR
-#define TI_CR   0x0D  // EGR
-#define TI_SP   0x20
+#define TI_SGR  0x0A  // SGR
+#define TI_EGR  0x0D  // EGR
+#define TI_SP   0x20  // End of label
 
 #define TI_STATE_INIT       0
-#define TI_STATE_WAIT_STX   1
-#define TI_STATE_WAIT_ETX   2
+#define TI_STATE_WAIT_SGR   1
+#define TI_STATE_WAIT_EGR   2
 #define TI_STATE_READY      3
 
 #define TI_BUFSIZE          64
@@ -71,7 +72,10 @@ class TeleinfoSensor : public BaseSensor {
         }
 
         ~TeleinfoSensor() {
-            if (_serial) delete _serial;
+            #if TELEINFO_SERIAL_HARDWARE
+            #else
+                if (_serial) delete _serial;
+            #endif                
         }
 
         // ---------------------------------------------------------------------
@@ -82,11 +86,14 @@ class TeleinfoSensor : public BaseSensor {
             _dirty = true;
         }
 
+        #if TELEINFO_SERIAL_HARDWARE
+        #else
         void setInverted(bool inverted) {
             if (_inverted == inverted) return;
             _inverted = inverted;
             _dirty = true;
         }
+        #endif
 
         // ---------------------------------------------------------------------
 
@@ -95,7 +102,11 @@ class TeleinfoSensor : public BaseSensor {
         }
 
         bool getInverted() {
-            return _inverted;
+            #if TELEINFO_SERIAL_HARDWARE
+                return 0;
+            #else
+                return _inverted;
+            #endif    
         }
 
         // ---------------------------------------------------------------------
@@ -108,14 +119,19 @@ class TeleinfoSensor : public BaseSensor {
             if (!_dirty) return;
             _dirty = false;
 
-            if (_serial) delete _serial;
+            #if TELEINFO_SERIAL_HARDWARE
+            #else           
+                if (_serial) delete _serial;
+            #endif     
 
             clearBuffer();
             _state = TI_STATE_INIT;
 
-            _serial = new SoftwareSerial( _pin_rx, SW_SERIAL_UNUSED_PIN, _inverted, 64 );
-            _serial->begin(TELEINFO_BAUDRATE);
-
+            #if TELEINFO_SERIAL_HARDWARE
+            #else
+                _serial = new SoftwareSerial( _pin_rx, SW_SERIAL_UNUSED_PIN, _inverted, 64 );
+                _serial->begin(TELEINFO_BAUDRATE);
+            #endif
         }
 
         // Descriptive name of the sensor
@@ -130,8 +146,8 @@ class TeleinfoSensor : public BaseSensor {
             if (index < _count) {
                 _error = SENSOR_ERROR_OK;
                 char buffer[36];
-                if (index == TI_SLOT_ADCO)    snprintf(buffer, sizeof(buffer), teleinfo_adco_topic    );
-                if (index == TI_SLOT_OPTARIF) snprintf(buffer, sizeof(buffer), teleinfo_optarif_topic );
+                if (index == TI_SLOT_ADCO)    snprintf(buffer, sizeof(buffer), teleinfo_topics[index] );
+                if (index == TI_SLOT_OPTARIF) snprintf(buffer, sizeof(buffer), teleinfo_topics[index] );
                 if (index == TI_SLOT_ISOUSC)  snprintf(buffer, sizeof(buffer), teleinfo_topics[index] );
                 if (index == TI_SLOT_HCHC)    snprintf(buffer, sizeof(buffer), teleinfo_topics[index] );
                 if (index == TI_SLOT_HCHP)    snprintf(buffer, sizeof(buffer), teleinfo_topics[index] );
@@ -149,7 +165,11 @@ class TeleinfoSensor : public BaseSensor {
 
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(unsigned char index) {
-            return String(_pin_rx);
+            #if TELEINFO_SERIAL_HARDWARE
+                return String(); 
+            #else
+                return String(_pin_rx);
+            #endif      
         }
 
         // Loop-like method, call it in your main loop
@@ -167,8 +187,8 @@ class TeleinfoSensor : public BaseSensor {
                 if (index == TI_SLOT_HCHC)    return MAGNITUDE_ENERGY;  // Joules
                 if (index == TI_SLOT_HCHP)    return MAGNITUDE_ENERGY;  // Joules
                 if (index == TI_SLOT_PTEC)    return MAGNITUDE_ENERGY;
-                if (index == TI_SLOT_IINST)   return MAGNITUDE_CURRENT;
-                if (index == TI_SLOT_IMAX)    return MAGNITUDE_CURRENT;
+                if (index == TI_SLOT_IINST)   return MAGNITUDE_ENERGY; // MAGNITUDE_CURRENT
+                if (index == TI_SLOT_IMAX)    return MAGNITUDE_ENERGY; // MAGNITUDE_CURRENT
 
             }
             _error = SENSOR_ERROR_OUT_OF_RANGE;
@@ -203,7 +223,7 @@ class TeleinfoSensor : public BaseSensor {
 
         void _read() {
 
-            static unsigned char state = 0;
+//          static unsigned char state = 0;
             static unsigned long last = 0;
             static bool found = false;
             static unsigned char index = 0;
@@ -214,6 +234,60 @@ class TeleinfoSensor : public BaseSensor {
             // c &= 0x7F;
 
             // Handle teleinfo serial
+
+#if TELEINFO_SERIAL_HARDWARE
+                     
+            while (Serial.available()>0) {
+                _optarif++;
+                c = Serial.read();
+                c &= 0x7F;
+                if (c>0) {
+                    _isousc++;
+                }
+                _ptec = SERIAL_BAUDRATE;
+                switch (c) {
+                    case TI_SGR: // start of group
+                        _hchc++;
+                        clearBuffer();
+                        if (_state == TI_STATE_INIT || _state == TI_STATE_WAIT_SGR ) {
+                            _state = TI_STATE_WAIT_EGR;
+                        } 
+                        break;  
+                    case TI_EGR: // end of transmission
+                        _hchp++;
+                              // We were waiting fo this one ?
+                        if (_state == TI_STATE_WAIT_EGR) {
+                            _state = TI_STATE_READY;
+                            if ((_recv_buff[0]=='H') && (_recv_buff[1]=='C')) {
+
+                            }
+                            /*
+                            if (std::equal( _recv_buff, _recv_buff+4, teleinfo_topics[0])) {
+
+                            }
+                            */
+
+
+                        } 
+                        else if ( _state == TI_STATE_INIT) {
+                            _state = TI_STATE_WAIT_SGR ;
+                        } 
+                        break;
+                    default: {
+                        if (_state==TI_STATE_READY) {
+                            _iinst = _iinst +1;
+                            if ( _recv_idx < TI_BUFSIZE) {
+                                _recv_buff[_recv_idx++] = c;
+                                _iinst = _recv_buff[0];
+                                _imax = _recv_buff[1] + 256 * _recv_buff[2] + 256*256*_recv_buff[3];
+                            } else
+                                clearBuffer();
+                            
+                        }
+                    }
+                } // switch                
+            } // 
+#else
             while (_serial->available()) {
                 _optarif = _optarif + 1;
                 // Read Serial and process to tinfo
@@ -221,7 +295,6 @@ class TeleinfoSensor : public BaseSensor {
                 if (c>0) {
                     _ptec = _ptec +1;
                 }
-
 
                 _imax = c;
                 switch (c) {
@@ -253,6 +326,7 @@ class TeleinfoSensor : public BaseSensor {
                     }
                 }
             }
+#endif            
 
         }
 
@@ -271,10 +345,13 @@ class TeleinfoSensor : public BaseSensor {
         unsigned int   _recv_idx;  // index in receive buffer
         boolean         _frame_updated; // Data on the frame has been updated
     
-
+    #if TELEINFO_SERIAL_HARDWARE
+        unsigned int _pin_rx = 0;
+    #else
         unsigned int _pin_rx = TELEINFO_PIN;
         bool _inverted = TELEINFO_PIN_INVERSE;
         SoftwareSerial * _serial = NULL;
+    #endif
         unsigned int _state = TI_STATE_INIT;
         double _adco    = 0;
         double _optarif = 0;
@@ -285,6 +362,8 @@ class TeleinfoSensor : public BaseSensor {
         double _iinst   = 0;
         double _imax    = 0;
         unsigned char _data[24];
+
+        double _value[TI_SLOT_COUNT] = {};
 
 };
 

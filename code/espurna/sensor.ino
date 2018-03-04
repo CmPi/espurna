@@ -397,8 +397,11 @@ void _sensorInit() {
     #if TELEINFO_SUPPORT
     {       
         TeleinfoSensor * sensor = new TeleinfoSensor();
-        sensor->setRX(TELEINFO_PIN);
-        sensor->setInverted(TELEINFO_PIN_INVERSE);
+        #if TELEINFO_SERIAL_HARDWARE
+        #else
+            sensor->setRX(TELEINFO_PIN);
+            sensor->setInverted(TELEINFO_PIN_INVERSE);
+        #endif
         _sensors.push_back(sensor);
     }
     #endif

@@ -460,7 +460,7 @@
 #endif
 
 #define TELEINFO_SYNC_INTERVAL            600   // Sync signal length (ms)
-#define TELEINFO_BAUDRATE                 9600  // 9600    // UART baudrate 9600     1200 plante
+#define TELEINFO_BAUDRATE                 1200  // 9600    // UART baudrate 9600     1200 plante
 
 // =============================================================================
 // Sensor helpers configuration

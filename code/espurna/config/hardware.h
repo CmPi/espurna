@@ -1430,11 +1430,28 @@
     // Info
     #define MANUFACTURER        "GENERIC"
     #define DEVICE              "TELEINFO"
+
     #define ALEXA_SUPPORT       0
 
     // TELEINFO
-    #define TELEINFO_SUPPORT      1
-    #define TELEINFO_PIN          2
+    #define TELEINFO_SUPPORT               1
+    #define TELEINFO_HISTORIC              1 
+    #define TELEINFO_SERIAL_HARDWARE       1
+
+    #if TELEINFO_HISTORIC
+        #define TELEINFO_BAUDRATE       1200                // baudrate to 1200
+    #else    
+        #define TELEINFO_BAUDRATE       9600                // baudrate to 9600
+    #endif
+
+    #if TELEINFO_SERIAL_HARDWARE                            // if hardware interface (RTX)
+        #undef DEBUG_SERIAL_SUPPORT                         // desactivate
+        #define DEBUG_SERIAL_SUPPORT    0                   // serial debug
+        #undef SERIAL_BAUDRATE                              // and set
+        #define SERIAL_BAUDRATE         TELEINFO_BAUDRATE   // baudrate to 1200 or 9600
+    #else
+       #define TELEINFO_PIN           2
+    #endif
 
 // -----------------------------------------------------------------------------
 
