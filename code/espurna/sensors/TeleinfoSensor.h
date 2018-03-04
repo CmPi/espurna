@@ -26,7 +26,6 @@
 #define TI_SLOT_PTEC                  5   // période tarifaire en cours, ici heure pleine
 #define TI_SLOT_IINST                 6   //  valeur instantanée de l'intensité, ici 1 A 
 #define TI_SLOT_IMAX                  7   // 
-#define TI_SLOT_MAX                   7
 #define TI_SLOT_COUNT                 8   // 
 
 #define TI_STX  0X02
